@@ -1,0 +1,213 @@
+import csv
+from datetime import datetime, timedelta
+import random
+
+# CSV Files
+CSV_FILE = "measurements.csv"
+OUT_OF_RANGE_FILE = "out_of_range.csv"
+CONTEXT_FILE = "context_data.csv"
+
+# Acceptable Ranges
+acceptable_temp_range = (18, 30)  # Example: 18°C to 30°C
+acceptable_humid_range = (30, 70)  # Example: 30% to 70%
+
+# Rolling buffers
+measurements_cache = []  # Stores all measurements
+
+# Initialize CSV files with headers
+def initialize_csv():
+    with open(CSV_FILE, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Temperature (°C)", "Humidity (%)", "Timestamp"])
+
+    with open(OUT_OF_RANGE_FILE, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Temperature (°C)", "Humidity (%)", "Timestamp", "Reason"])
+
+    with open(CONTEXT_FILE, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Temperature (°C)", "Humidity (%)", "Timestamp", "Related To", "Position"])
+
+# Save measurement to the main CSV
+def save_to_csv(measurement):
+    with open(CSV_FILE, mode='a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow([measurement['temp'], measurement['humidity'], measurement['time']])
+
+# Save out-of-range data to a separate CSV
+def save_out_of_range(measurement, reason):
+    with open(OUT_OF_RANGE_FILE, mode='a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow([measurement['temp'], measurement['humidity'], measurement['time'], reason])
+
+# Save context data to a separate CSV
+def save_context_data(context_measurement, related_to, position, added_measurements):
+    if (context_measurement['temp'], context_measurement['humidity'], context_measurement['time'], related_to) not in added_measurements:
+        with open(CONTEXT_FILE, mode='a', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow([
+                context_measurement['temp'],
+                context_measurement['humidity'],
+                context_measurement['time'],
+                related_to,
+                position
+            ])
+        added_measurements.add((context_measurement['temp'], context_measurement['humidity'], context_measurement['time'], related_to))
+
+# Log contextual data for anomalies
+def log_context(out_of_range_measurement):
+    global measurements_cache
+
+    # Parse the timestamp of the anomaly
+    out_of_range_time = datetime.strptime(out_of_range_measurement['time'], '%Y-%m-%d %H:%M:%S')
+
+    # Define the time window: 30 seconds before and after the anomaly
+    start_time = out_of_range_time - timedelta(seconds=30)
+    end_time = out_of_range_time + timedelta(seconds=30)
+
+    added_measurements = set()
+
+    # Collect measurements within the 30-second window
+    context_measurements = [
+        m for m in measurements_cache if start_time <= datetime.strptime(m['time'], '%Y-%m-%d %H:%M:%S') <= end_time
+    ]
+
+    # Ensure all surrounding readings and the anomaly itself are logged
+    for context_measurement in context_measurements:
+        context_time = datetime.strptime(context_measurement['time'], '%Y-%m-%d %H:%M:%S')
+        if context_time == out_of_range_time:
+            position = "Exact moment"  # Anomaly itself
+        else:
+            position = "Surrounding readings"  # Other readings in the window
+
+        save_context_data(context_measurement, out_of_range_measurement['time'], position, added_measurements)
+
+# Simulate data and inject anomalies
+import csv
+from datetime import datetime, timedelta
+import random
+
+# CSV Files
+CSV_FILE = "measurements.csv"
+OUT_OF_RANGE_FILE = "out_of_range.csv"
+CONTEXT_FILE = "context_data.csv"
+
+# Acceptable Ranges
+acceptable_temp_range = (18, 30)  # Example: 18°C to 30°C
+acceptable_humid_range = (30, 70)  # Example: 30% to 70%
+
+# Rolling buffers
+measurements_cache = []  # Stores all measurements
+
+# Initialize CSV files with headers
+def initialize_csv():
+    with open(CSV_FILE, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Temperature (°C)", "Humidity (%)", "Timestamp"])
+
+    with open(OUT_OF_RANGE_FILE, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Temperature (°C)", "Humidity (%)", "Timestamp", "Reason"])
+
+    with open(CONTEXT_FILE, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Temperature (°C)", "Humidity (%)", "Timestamp", "Related To", "Position"])
+
+# Save measurement to the main CSV
+def save_to_csv(measurement):
+    with open(CSV_FILE, mode='a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow([measurement['temp'], measurement['humidity'], measurement['time']])
+
+# Save out-of-range data to a separate CSV
+def save_out_of_range(measurement, reason):
+    with open(OUT_OF_RANGE_FILE, mode='a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow([measurement['temp'], measurement['humidity'], measurement['time'], reason])
+
+# Save context data to a separate CSV
+def save_context_data(context_measurement, related_to, position, added_measurements):
+    if (context_measurement['temp'], context_measurement['humidity'], context_measurement['time'], related_to) not in added_measurements:
+        with open(CONTEXT_FILE, mode='a', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow([
+                context_measurement['temp'],
+                context_measurement['humidity'],
+                context_measurement['time'],
+                related_to,
+                position
+            ])
+        added_measurements.add((context_measurement['temp'], context_measurement['humidity'], context_measurement['time'], related_to))
+
+# Log contextual data for anomalies
+def log_context(out_of_range_measurement):
+    global measurements_cache
+
+    # Parse the timestamp of the anomaly
+    out_of_range_time = datetime.strptime(out_of_range_measurement['time'], '%Y-%m-%d %H:%M:%S')
+
+    # Define the time window: 5 minutes (300 seconds) before and after the anomaly
+    start_time = out_of_range_time - timedelta(minutes=5)
+    end_time = out_of_range_time + timedelta(minutes=5)
+
+    added_measurements = set()
+
+    # Collect measurements within the 5-minute window
+    context_measurements = [
+        m for m in measurements_cache if start_time <= datetime.strptime(m['time'], '%Y-%m-%d %H:%M:%S') <= end_time
+    ]
+
+    # Ensure all surrounding readings and the anomaly itself are logged
+    for context_measurement in context_measurements:
+        context_time = datetime.strptime(context_measurement['time'], '%Y-%m-%d %H:%M:%S')
+        if context_time == out_of_range_time:
+            position = "Exact moment"  # Anomaly itself
+        else:
+            position = "Surrounding readings"  # Other readings in the window
+
+        save_context_data(context_measurement, out_of_range_measurement['time'], position, added_measurements)
+
+# Simulate data and inject anomalies
+def simulate_data():
+    global measurements_cache
+
+    initialize_csv()
+
+    start_time = datetime(2024, 11, 20, 12, 0, 0)
+    anomaly_time = start_time + timedelta(seconds=300)  # Guaranteed anomaly at 5 minutes
+
+    # Generate 720 readings (30 seconds apart)
+    for i in range(720):
+        current_time = start_time + timedelta(seconds=30 * i)
+
+        # Inject the anomaly at exactly 5 minutes
+        if current_time == anomaly_time:
+            temp = 35  # Out-of-range temperature
+            humid = 80  # Out-of-range humidity
+        else:
+            temp = random.uniform(18, 30)  # Normal temperature
+            humid = random.uniform(30, 70)  # Normal humidity
+
+        timestamp = current_time.strftime('%Y-%m-%d %H:%M:%S')
+        measurements_cache.append({"temp": temp, "humidity": humid, "time": timestamp})
+
+    # Save all measurements to the main CSV
+    for measurement in measurements_cache:
+        save_to_csv(measurement)
+
+    # Process anomalies after all data is simulated
+    for measurement in measurements_cache:
+        temp = measurement['temp']
+        humid = measurement['humidity']
+        timestamp = measurement['time']
+
+        if not (acceptable_temp_range[0] <= temp <= acceptable_temp_range[1]) or not (acceptable_humid_range[0] <= humid <= acceptable_humid_range[1]):
+            reason = f"Out-of-range measurement at {timestamp}"
+            save_out_of_range(measurement, reason)
+            log_context(measurement)
+
+    print("Simulation complete. Guaranteed anomaly at:", anomaly_time.strftime('%Y-%m-%d %H:%M:%S'))
+
+# Entry point
+if __name__ == "__main__":
+    simulate_data()
